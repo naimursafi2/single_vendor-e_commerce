@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-const { OTPMailTemp } = require("./email.Templates");
+const { OTPMailTemp } = require("./emailTemplates");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -11,11 +11,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const mailsender = async ({ email, subject, template, fullName }) => {
+const mailsender = async ({ email, subject, template }) => {
   try {
     await transporter.sendMail({
       from: '"E-commerce Team" <team@taskmanager.com>',
-
       to: email,
       subject: subject,
       html: template,

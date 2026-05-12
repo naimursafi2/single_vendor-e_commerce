@@ -1,4 +1,4 @@
-const { OTPMailTemp } = require("../helpers/email.Templates");
+const { OTPMailTemp } = require("../helpers/emailTemplates");
 const { mailsender } = require("../helpers/mailService");
 const { isValidEmail, generatOTP } = require("../helpers/utils");
 const userSchema = require("../models/userSchema");
@@ -28,8 +28,9 @@ const signup = async (req, res) => {
     mailsender({
       email,
       subject: "verify your otp",
-      template: OTPMailTemp(otp),
+      template: OTPMailTemp(otp, fullName),
     });
+    
     res
       .status(200)
       .send({ message: "Registration Successfully, please verify your email" });
