@@ -1,6 +1,11 @@
 const { OTPMailTemp } = require("../helpers/emailTemplates");
 const { mailsender } = require("../helpers/mailService");
-const { isValidEmail, generatOTP } = require("../helpers/utils");
+const {
+  isValidEmail,
+  generatOTP,
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../helpers/utils");
 const userSchema = require("../models/userSchema");
 
 const signup = async (req, res) => {
@@ -72,6 +77,57 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+const resendOtp = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const userData = await userSchema.findOne({ email, isVerified: false });
+    if (!userData) return res.status(400).send({ message: "Invalid request" });
+    const otp = generatOTP();
+    userData.otp = otp;
+    userData.otpExpiry = Date.now() + 10 * 60 * 1000;
+    await userData.save();
+    mailsender({
+      email,
+      subject: "verify your otp",
+      template: OTPMailTemp(otp),
+    });
 
+    res.status(200).send({ message: "new otp send your email" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+};
 
-module.exports = { signup, verifyOtp };
+const cookie_config = {
+  httpOnly: false,
+  secure: false,
+};
+
+const signIn = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const userData = await userSchema.findOne({ email }).select("+password");
+    if (!userData) return res.status(400).send({ message: "user not found" });
+    if (userData.isVerified === false)
+      return res.status(400).send({ message: "Email is not verified" });
+    //password mathced
+    const matchPassword = await userData.comparePassword(password);
+    if (!matchPassword)
+      return res.status(400).send({ message: "password does not match" });
+
+    const accToken = generateAccessToken(userData);
+    const refToken = generateRefreshToken(userData);
+
+    res
+      .status(200)
+      .cookie("acc_tkn", accToken, cookie_config)
+      .cookie("ref_tkn", refToken, cookie_config)
+      .send({ message: "Login Successfull" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+module.exports = { signup, verifyOtp, resendOtp, signIn };
