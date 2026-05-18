@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema(
   {
     avatar: {
       type: String,
+      default: "",
     },
     fullName: {
       type: String,
@@ -45,20 +46,19 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return ;
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    
-  } catch (error) {
-   res.status(500).send({message:"Server Error"})
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
-userSchema.methods.comparePassword = async function (plainpass) {
-  return bcrypt.compare(plainpass, this.password);
+userSchema.methods.comparePassword = async function (plainPassword) {
+  if (typeof plainPassword !== "string" || typeof this.password !== "string") {
+    return false;
+  }
+
+  return bcrypt.compare(plainPassword, this.password);
 };
 
 module.exports = mongoose.model("user", userSchema);

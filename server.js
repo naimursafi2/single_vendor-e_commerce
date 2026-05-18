@@ -1,15 +1,16 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
-// const dns = require("dns");
+const cookieParser = require("cookie-parser");
+const dns = require("dns");
 const router = require("./routes");
 const dbConfig = require("./configs/dbConfig");
 
-// dns.setServers(["8.8.8.8", "8.8.4.4"]);
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 dbConfig();
-app.use(express.json())
+app.use(express.json());
+app.use(cookieParser());
 app.use(router);
-
 
 app.listen(8000, () => {
   console.log("Server is running");

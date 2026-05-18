@@ -105,8 +105,12 @@ const cookie_config = {
 };
 
 const signIn = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
   try {
+    if (!email) return res.status(400).send({ message: "email is required" });
+    if (!password)
+      return res.status(400).send({ message: "password is required" });
+
     const userData = await userSchema.findOne({ email }).select("+password");
     if (!userData) return res.status(400).send({ message: "user not found" });
     if (userData.isVerified === false)
@@ -130,4 +134,20 @@ const signIn = async (req, res) => {
   }
 };
 
-module.exports = { signup, verifyOtp, resendOtp, signIn };
+const getProfile = async (req, res) => {
+  try {
+    const profileData = await userSchema.findOne(
+      { _id: req.user._id },
+      { fullName: 1, email: 1, role: 1, avatar: 1 },
+    );
+    if (!profileData)
+      return res.status(400).send({ message: "Profile data is not found" });
+
+    res.status(200).send(profileData);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+module.exports = { signup, verifyOtp, resendOtp, signIn, getProfile };
