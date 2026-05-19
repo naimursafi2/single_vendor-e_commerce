@@ -5,6 +5,8 @@ const {
   generatOTP,
   generateAccessToken,
   generateRefreshToken,
+  uploadToCloudinary,
+  destroyFromCloudinary,
 } = require("../helpers/utils");
 const userSchema = require("../models/userSchema");
 
@@ -138,7 +140,7 @@ const getProfile = async (req, res) => {
   try {
     const profileData = await userSchema.findOne(
       { _id: req.user._id },
-      { fullName: 1, email: 1, role: 1, avatar: 1 },
+      { fullName: 1, email: 1, role: 1, avatar: 1, address: 1 },
     );
     if (!profileData)
       return res.status(400).send({ message: "Profile data is not found" });
@@ -150,4 +152,39 @@ const getProfile = async (req, res) => {
   }
 };
 
-module.exports = { signup, verifyOtp, resendOtp, signIn, getProfile };
+const updateProfile = async (req, res) => {
+  const { fullName, address } = req.body;
+  const avatar = req.file;
+  try {
+    const userData = await userSchema.findOne({ _id: req.user._id });
+
+    if (!userData)
+      return res.status(400).send({ message: "Something went wrong" });
+    if (fullName && fullName.trim()) userData.fullName = fullName;
+    if (address && address.trim()) userData.address = address;
+    if (avatar) {
+      try {
+        const avatarUrl = await uploadToCloudinary({
+          mimetype: avatar.mimetype,
+          imgBuffer: avatar.buffer,
+        });
+        if (userData.avatar) destroyFromCloudinary(userData.avatar);
+        userData.avatar = avatarUrl;
+      } catch (error) {}
+    }
+    userData.save();
+    res.status(200).send({ message: "profile update successfully." });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+module.exports = {
+  signup,
+  verifyOtp,
+  resendOtp,
+  signIn,
+  getProfile,
+  updateProfile,
+};
