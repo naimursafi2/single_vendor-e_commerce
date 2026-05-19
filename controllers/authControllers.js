@@ -180,6 +180,24 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const userList = async (req, res) => {
+  const { verified } = req.query || "";
+  const filterQueries = {};
+  if (verified && verified.toLowerCase() != "all") {
+    filterQueries.isVerified = verified === "true";
+  }
+  try {
+    const users = await userSchema.find(filterQueries, {
+      fullName: 1,
+      email: 1,
+      role: 1,
+      avatar: 1,
+      isVerified: 1,
+    });
+    res.status(200).send(users);
+  } catch (error) {}
+};
+
 module.exports = {
   signup,
   verifyOtp,
@@ -187,4 +205,5 @@ module.exports = {
   signIn,
   getProfile,
   updateProfile,
+  userList,
 };

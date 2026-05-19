@@ -22,6 +22,7 @@ const generateAccessToken = (user) => {
     { expiresIn: "1h" },
   );
 };
+
 const generateRefreshToken = (user) => {
   return jwt.sign(
     {
@@ -50,6 +51,8 @@ const destroyFromCloudinary = (url) => {
     }
   });
 }
+
+
 
 module.exports = {
   isValidEmail,
