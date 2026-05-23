@@ -9,7 +9,7 @@ const categorySchema = new mongoose.Schema(
     },
     thumbnail: {
       type: String,
-      required: true,
+     // required: true,
     },
   },
   { timestamps: true },
