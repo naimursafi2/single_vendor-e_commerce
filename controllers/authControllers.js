@@ -211,7 +211,7 @@ const userList = async (req, res) => {
         page,
         totalPage,
         hasNextPage: totalPage > page,
-        hasPrevPage: totalPage < page,
+        hasPrevPage: page > 1
       },
     });
   } catch (error) {
