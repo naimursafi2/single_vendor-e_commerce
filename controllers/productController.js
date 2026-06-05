@@ -58,7 +58,7 @@ const createProduct = async (req, res) => {
     }
 
     const skus = variantsData.map((v) => v.sku);
-    if (new set(skus).size !== skus.length)
+    if (new Set(skus).size !== skus.length)
       return res.status(400).send({ message: "SKU must unique" });
   } catch (error) {
     console.log(error);
