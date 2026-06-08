@@ -1,3 +1,4 @@
+const { uploadToCloudinary } = require("../helpers/utils");
 const categorySchema = require("../models/categorySchema");
 const productSchema = require("../models/productSchema");
 
@@ -6,7 +7,7 @@ const createProduct = async (req, res) => {
     const {
       title,
       slug,
-      discription,
+      description,
       category,
       price,
       discountPercentage,
@@ -14,8 +15,14 @@ const createProduct = async (req, res) => {
       tags,
       isActive,
     } = req.body;
-    const thumbnail = req.file?.thumbnail;
-    const images = req.file?.images;
+    const thumbnail = req.files?.thumbnail;
+    const images = req.files?.images;
+
+    if (!thumbnail || thumbnail.length == 0)
+      return res.status(400).send({ message: "product thumbnail is required" });
+
+    if (!images || images.length == 0)
+      return res.status(400).send({ message: "product images is required" });
 
     if (!title)
       return res.status(400).send({ message: "Product title is required" });
@@ -25,7 +32,7 @@ const createProduct = async (req, res) => {
     });
     if (isSlugExist)
       return res.status(400).send({ message: "Slug already exist" });
-    if (!discription)
+    if (!description)
       return res
         .status(400)
         .send({ message: "Product description is required" });
@@ -38,8 +45,8 @@ const createProduct = async (req, res) => {
       return res.status(400).send({ message: "Product price is required" });
 
     //validation of product variants
-
-    const variantsData = variants;
+    //This json data is temporary, comming form postman, will be change in real frontend
+    const variantsData = JSON.parse(variants);
 
     if (!Array.isArray(variantsData) || variantsData.length === 0)
       return res.status(400).send({ message: "Minimum 1 variant is required" });
@@ -60,6 +67,40 @@ const createProduct = async (req, res) => {
     const skus = variantsData.map((v) => v.sku);
     if (new Set(skus).size !== skus.length)
       return res.status(400).send({ message: "SKU must unique" });
+
+    //Images validation and upload
+
+    const thumbnailUrl = await uploadToCloudinary({
+      mimetype: thumbnail[0].mimetype,
+      imgBuffer: thumbnail[0].buffer,
+    });
+    //console.log("thumbnail =>", thumbnailUrl);
+
+    const imgsRes = images.map((item) => {
+      return uploadToCloudinary({
+        mimetype: item.mimetype,
+        imgBuffer: item.buffer,
+      });
+    });
+    const imagesUrls = await Promise.all(imgsRes);
+    // console.log("imagesurl =>", imagesUrls);
+
+    const productData = await productSchema.create({
+      title,
+      slug,
+      description,
+      category,
+      price,
+      discountPercentage,
+      variants: variantsData,
+      tags,
+      isActive,
+      thumbnail: thumbnailUrl,
+      images: imagesUrls,
+    });
+    res
+      .status(200)
+      .send({ message: "Product Created Successfully", productData });
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "Internal server Error" });
