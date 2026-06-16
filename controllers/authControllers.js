@@ -7,6 +7,7 @@ const {
   generateRefreshToken,
   uploadToCloudinary,
   destroyFromCloudinary,
+  generateResetPassToken,
 } = require("../helpers/utils");
 const userSchema = require("../models/userSchema");
 
@@ -98,6 +99,47 @@ const resendOtp = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+const forgatePass = async (req, res) => {
+  const { email } = req.body;
+  try {
+    if (!email) return res.status(400).send({ message: "Email is required" });
+    if (!isValidEmail(email))
+      return res.status(400).send({ message: "email is not valid" });
+    const existUser = await userSchema.findOne({ email });
+    if (!existUser) return res.status(400).send({ message: "Email not found" });
+
+    //generate reset password token
+    const { resetToken, hashedToken } = generateResetPassToken();
+    existUser.resetToken = hashedToken;
+    existUser.resetTokenExpiry = Date.now() + 2 * 60 * 1000;
+    const resetPassUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
+    console.log(resetPassUrl);
+
+    //send to email
+    mailsender({
+      email,
+      subject: "Resend your otp",
+      template: OTPMailTemp(resetPassUrl, fullName),
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { newpass } = req.body;
+    const { token } = req.params;
+    if (!newpass)
+      return res.status(400).send({ message: "password is required" });
+    if (!token) return res.status(400).send({ message: "Invalid token" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal server Error" });
   }
 };
 
@@ -211,7 +253,7 @@ const userList = async (req, res) => {
         page,
         totalPage,
         hasNextPage: totalPage > page,
-        hasPrevPage: page > 1
+        hasPrevPage: page > 1,
       },
     });
   } catch (error) {
@@ -228,4 +270,5 @@ module.exports = {
   getProfile,
   updateProfile,
   userList,
+  forgatePass,
 };

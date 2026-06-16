@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-const cloudinary = require("../configs/cloudinaryConfig")
+const cloudinary = require("../configs/cloudinaryConfig");
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const isValidEmail = (email) => {
@@ -9,6 +9,21 @@ const isValidEmail = (email) => {
 
 const generatOTP = () => {
   return crypto.randomInt(1000, 10000).toString();
+};
+
+const generateResetPassToken = () => {
+  const resetToken = crypto.randomBytes(16).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  return { resetToken, hashedToken };
+};
+
+const hashResetToken = (token) => {
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  return hashedToken;
 };
 
 const generateAccessToken = (user) => {
@@ -35,12 +50,11 @@ const generateRefreshToken = (user) => {
   );
 };
 
-const uploadToCloudinary = async ({mimetype, imgBuffer})=>{
-  
+const uploadToCloudinary = async ({ mimetype, imgBuffer }) => {
   const dataUrl = `data:${mimetype};base64,${imgBuffer.toString("base64")}`;
-  const res = await cloudinary.uploader.upload(dataUrl)
-  return res.secure_url
-}
+  const res = await cloudinary.uploader.upload(dataUrl);
+  return res.secure_url;
+};
 
 const destroyFromCloudinary = (url) => {
   const publicId = url.split("/").pop().split(".").shift();
@@ -50,9 +64,7 @@ const destroyFromCloudinary = (url) => {
       console.log("Destroy from cloudinary:", error);
     }
   });
-}
-
-
+};
 
 module.exports = {
   isValidEmail,
@@ -60,5 +72,7 @@ module.exports = {
   generateAccessToken,
   generateRefreshToken,
   uploadToCloudinary,
-  destroyFromCloudinary
+  destroyFromCloudinary,
+  generateResetPassToken,
+  hashResetToken
 };

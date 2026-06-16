@@ -36,6 +36,13 @@ const userSchema = new mongoose.Schema(
     otpExpiry: {
       type: Date,
     },
+    resetToken:{
+      type:String,
+      default:null,
+    },
+    resetTokenExpiry:{
+      type:Date,
+    },
     role: {
       type: String,
       required: true,
