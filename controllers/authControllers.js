@@ -8,6 +8,7 @@ const {
   uploadToCloudinary,
   destroyFromCloudinary,
   generateResetPassToken,
+  hashResetToken,
 } = require("../helpers/utils");
 const userSchema = require("../models/userSchema");
 
@@ -115,9 +116,11 @@ const forgatePass = async (req, res) => {
     const { resetToken, hashedToken } = generateResetPassToken();
     existUser.resetToken = hashedToken;
     existUser.resetTokenExpiry = Date.now() + 2 * 60 * 1000;
+   
     const resetPassUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
     console.log(resetPassUrl);
-
+    
+    existUser.save()
     //send to email
     mailsender({
       email,
@@ -137,6 +140,21 @@ const resetPassword = async (req, res) => {
     if (!newpass)
       return res.status(400).send({ message: "password is required" });
     if (!token) return res.status(400).send({ message: "Invalid token" });
+
+    const genHashedToken = hashResetToken(token);
+    const userData = await userSchema.findOne({
+      resetToken: genHashedToken,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+
+    if (!userData) return res.status(400).send({ message: "invalid request" });
+
+    userData.password = newpass;
+    userData.resetToken = null;
+    userData.resetTokenExpiry;
+    userData.save();
+
+    res.status(200).send({ message: "Password update successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "Internal server Error" });
@@ -271,4 +289,5 @@ module.exports = {
   updateProfile,
   userList,
   forgatePass,
+  resetPassword,
 };
